@@ -19,14 +19,68 @@ The build creates four packages:
 - MongoDB 7.0+
 - Node.js and Yarn (for webconsole)
 
-## Build Dependencies
+## Installing Required PPAs and Dependencies
 
-Before building, install the required dependencies:
+Before building, you need to set up the required repositories and install the dependencies:
+
+### 1. MongoDB 7.0
 
 ```bash
+# Import the MongoDB public GPG key
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+
+# Create the list file for MongoDB
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+# Reload local package database
 sudo apt update
-sudo apt install git golang gcc g++ cmake autoconf libtool pkg-config \
-    libmnl-dev libyaml-dev nodejs npm dkms mongodb
+
+# Install MongoDB
+sudo apt install -y mongodb-org
+```
+
+### 2. Go 1.21+
+
+```bash
+# Add the golang PPA
+sudo add-apt-repository ppa:longsleep/golang-backports
+
+# Update package database
+sudo apt update
+
+# Install Go
+sudo apt install -y golang-1.21
+```
+
+### 3. Node.js 20.x
+
+```bash
+# Download and execute the NodeSource installation script
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+
+# Install Node.js
+sudo apt install -y nodejs
+```
+
+### 4. Yarn
+
+```bash
+# Configure the repository
+curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/yarnkey.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+
+# Update package database
+sudo apt update
+
+# Install Yarn
+sudo apt install -y yarn
+```
+
+### 5. Other Dependencies
+
+```bash
+# Install other build dependencies
+sudo apt install -y git gcc g++ cmake autoconf libtool pkg-config libmnl-dev libyaml-dev dkms
 ```
 
 ## Building the Packages
