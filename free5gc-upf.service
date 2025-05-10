@@ -1,0 +1,14 @@
+[Unit]
+Description=Free5GC User Plane Function (UPF)
+After=network.target
+Requires=gtp5g.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/free5gc-upf -c /etc/free5gc/config/upfcfg.yaml
+Restart=always
+RestartSec=2
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target

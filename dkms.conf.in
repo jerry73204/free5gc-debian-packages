@@ -1,0 +1,8 @@
+PACKAGE_NAME="gtp5g"
+PACKAGE_VERSION="@VERSION@"
+AUTOINSTALL="yes"
+
+BUILT_MODULE_NAME[0]="gtp5g"
+DEST_MODULE_LOCATION[0]="/kernel/net/gtp5g"
+MAKE[0]="make"
+CLEAN="make clean"

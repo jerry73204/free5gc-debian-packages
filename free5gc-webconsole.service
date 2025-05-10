@@ -1,0 +1,15 @@
+[Unit]
+Description=Free5GC Web Console
+After=network.target mongodb.service
+
+[Service]
+Type=simple
+Environment="GIN_MODE=release"
+WorkingDirectory=/usr/share/free5gc-webconsole
+ExecStart=/usr/bin/free5gc-webconsole -c /etc/free5gc/webuicfg.yaml
+Restart=always
+RestartSec=2
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target

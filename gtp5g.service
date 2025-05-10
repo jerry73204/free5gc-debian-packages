@@ -1,0 +1,13 @@
+[Unit]
+Description=GTP5G kernel module
+Before=free5gc-upf.service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/modprobe gtp5g
+ExecStop=/sbin/rmmod gtp5g
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
