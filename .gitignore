@@ -1,0 +1,35 @@
+# Makedeb build directories and files
+/pkg/
+/src/
+/*.pkg.tar.*
+/*.deb
+/*.sig
+/*.tar.gz
+/*.zst
+/*.log
+/*.asc
+
+# Build-related files
+gtp5g/
+free5gc/
+go-gtp5gnl/
+
+# Generated files
+free5gc-src/
+
+# Temporary and backup files
+*~
+*.swp
+*.bak
+*.tmp
+*.orig
+.*.sw?
+
+# Editor/IDE-specific files
+.vscode/
+.idea/
+*.sublime-*
+
+# System-specific files
+.DS_Store
+Thumbs.db
