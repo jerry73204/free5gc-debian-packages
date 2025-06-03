@@ -4,10 +4,10 @@ This repository contains makedeb PKGBUILD files for building Free5GC as Debian p
 
 ## Package Structure
 
-The repository is organized into two main components:
+The repository contains:
 
-1. **free5gc-dependencies**: Meta-package to set up all required repositories and dependencies
-2. **free5gc**: Core Free5GC packages (NFs, UPF, WebConsole, and GTP5G kernel module)
+1. **ansible/**: Ansible playbook and configuration for setting up dependencies
+2. **free5gc/**: Core Free5GC packages (NFs, UPF, WebConsole, and GTP5G kernel module)
 
 ## System Requirements
 
@@ -16,30 +16,25 @@ The repository is organized into two main components:
 
 ## Installation Guide
 
-### Step 1: Build and Install Dependencies
+### Step 1: Install Dependencies
 
-First, build and install the dependencies meta-package:
+Use the provided Ansible playbook to set up all required repositories and dependencies:
 
 ```bash
-# Navigate to the dependencies directory
-cd free5gc-dependencies
+# Install Ansible if not already installed
+sudo apt update && sudo apt install -y ansible
 
-# Build the meta-package
-makedeb -s
-
-# Install the meta-package
-sudo apt install ../free5gc-dependencies_*.deb
-
-# Update package lists to include the new repositories
-sudo apt-get update
-
-# Install the required dependencies from the new repositories
-sudo apt-get install mongodb-org golang-1.21 nodejs yarn
+# Run the dependency installation playbook (will prompt for sudo password)
+cd ansible
+ansible-playbook install-dependencies.yml --ask-become-pass
 ```
 
-The dependencies meta-package will:
+The playbook will:
 - Add all necessary repositories (MongoDB, Go, Node.js, Yarn)
 - Install basic build dependencies
+- Install MongoDB, Go 1.21+, Node.js, and Yarn
+- Verify all installations
+- Install makedeb if not already present
 
 ### Step 2: Build Free5GC Packages
 

@@ -1,0 +1,254 @@
+---
+- name: Install Free5GC Dependencies
+  hosts: localhost
+  vars:
+    mongodb_version: "7.0"
+    nodejs_version: "20"
+    go_version: "1.21"
+    
+  tasks:
+    - name: Gather OS facts
+      ansible.builtin.setup:
+        gather_subset:
+          - distribution
+          - distribution_release
+
+    - name: Check if running on supported OS
+      ansible.builtin.fail:
+        msg: "This playbook only supports Debian and Ubuntu"
+      when: ansible_distribution not in ['Debian', 'Ubuntu']
+
+    - name: Display OS information
+      ansible.builtin.debug:
+        msg: "Detected: {{ ansible_distribution }} {{ ansible_distribution_release }}"
+
+    # Step 1: Install base dependencies
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Install base dependencies
+      ansible.builtin.apt:
+        name:
+          - git
+          - gcc
+          - g++
+          - cmake
+          - autoconf
+          - libtool
+          - pkg-config
+          - libmnl-dev
+          - libyaml-dev
+          - dkms
+          - libyaml-cpp-dev
+          - curl
+          - wget
+          - gnupg2
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - lsb-release
+          - dirmngr
+        state: present
+      become: yes
+
+    # Step 2: Add MongoDB repository
+    - name: Add MongoDB GPG key
+      ansible.builtin.apt_key:
+        url: https://www.mongodb.org/static/pgp/server-{{ mongodb_version }}.asc
+        state: present
+      become: yes
+
+    - name: Add MongoDB repository
+      ansible.builtin.apt_repository:
+        repo: "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu {{ ansible_distribution_release }}/mongodb-org/{{ mongodb_version }} multiverse"
+        state: present
+        filename: mongodb-org-{{ mongodb_version }}
+        update_cache: no
+      become: yes
+
+    # Step 3: Add Go repository
+    - name: Add Go PPA for Ubuntu
+      ansible.builtin.apt_repository:
+        repo: ppa:longsleep/golang-backports
+        state: present
+        update_cache: no
+      when: ansible_distribution == 'Ubuntu'
+      become: yes
+
+    - name: Add Debian backports for Go
+      ansible.builtin.apt_repository:
+        repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
+        state: present
+        filename: backports
+        update_cache: no
+      when: ansible_distribution == 'Debian'
+      become: yes
+
+    # Step 4: Add Node.js repository
+    - name: Add NodeSource GPG key
+      ansible.builtin.apt_key:
+        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+        state: present
+      become: yes
+
+    - name: Add NodeSource repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://deb.nodesource.com/node_{{ nodejs_version }}.x {{ ansible_distribution_release }} main"
+        state: present
+        filename: nodesource
+        update_cache: no
+      become: yes
+
+    # Step 5: Add Yarn repository
+    - name: Add Yarn GPG key
+      ansible.builtin.apt_key:
+        url: https://dl.yarnpkg.com/debian/pubkey.gpg
+        state: present
+      become: yes
+
+    - name: Add Yarn repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://dl.yarnpkg.com/debian stable main"
+        state: present
+        filename: yarn
+        update_cache: no
+      become: yes
+
+    # Step 6: Update apt cache after adding repositories
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+      become: yes
+
+    # Step 7: Install dependencies from new repositories
+    - name: Install MongoDB
+      ansible.builtin.apt:
+        name: mongodb-org
+        state: present
+      become: yes
+
+    - name: Install Go for Ubuntu
+      ansible.builtin.apt:
+        name: golang-{{ go_version }}
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+      become: yes
+
+    - name: Check available Go packages for Debian
+      ansible.builtin.command: apt-cache search "^golang" | grep -E "^golang-[0-9]"
+      register: go_packages
+      changed_when: false
+      when: ansible_distribution == 'Debian'
+
+    - name: Install Go for Debian
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - golang-{{ go_version }}
+      when: ansible_distribution == 'Debian'
+      ignore_errors: yes
+      become: yes
+
+    - name: Install fallback Go package for Debian
+      ansible.builtin.apt:
+        name: golang
+        state: present
+      when: ansible_distribution == 'Debian'
+      become: yes
+
+    - name: Install Node.js
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+      become: yes
+
+    - name: Install Yarn
+      ansible.builtin.apt:
+        name: yarn
+        state: present
+      become: yes
+
+    # Step 8: Install makedeb
+    - name: Check if makedeb is installed
+      ansible.builtin.command: which makedeb
+      register: makedeb_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download makedeb
+      ansible.builtin.get_url:
+        url: https://github.com/makedeb/makedeb/releases/latest/download/makedeb.deb
+        dest: /tmp/makedeb.deb
+        mode: '0644'
+      when: makedeb_check.rc != 0
+
+    - name: Install makedeb
+      ansible.builtin.apt:
+        deb: /tmp/makedeb.deb
+        state: present
+      when: makedeb_check.rc != 0
+      become: yes
+
+    - name: Remove makedeb download
+      ansible.builtin.file:
+        path: /tmp/makedeb.deb
+        state: absent
+      when: makedeb_check.rc != 0
+
+    # Step 9: Verify installations
+    - name: Check MongoDB version
+      ansible.builtin.command: mongod --version
+      register: mongodb_version_output
+      changed_when: false
+      failed_when: false
+
+    - name: Check Go version
+      ansible.builtin.shell: |
+        if command -v go &>/dev/null; then
+          go version
+        elif command -v /usr/lib/go-{{ go_version }}/bin/go &>/dev/null; then
+          /usr/lib/go-{{ go_version }}/bin/go version
+        else
+          echo "Go not found"
+          exit 1
+        fi
+      register: go_version_output
+      changed_when: false
+      failed_when: false
+
+    - name: Check Node.js version
+      ansible.builtin.command: node --version
+      register: node_version_output
+      changed_when: false
+      failed_when: false
+
+    - name: Check Yarn version
+      ansible.builtin.command: yarn --version
+      register: yarn_version_output
+      changed_when: false
+      failed_when: false
+
+    - name: Display installed versions
+      ansible.builtin.debug:
+        msg:
+          - "MongoDB: {{ mongodb_version_output.stdout_lines[0] | default('Not installed') }}"
+          - "Go: {{ go_version_output.stdout | default('Not installed') }}"
+          - "Node.js: {{ node_version_output.stdout | default('Not installed') }}"
+          - "Yarn: {{ yarn_version_output.stdout | default('Not installed') }}"
+
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg:
+          - "Setup Complete!"
+          - "All dependencies have been installed successfully."
+          - ""
+          - "You can now build the Free5GC packages by running:"
+          - "  cd free5gc"
+          - "  makedeb -s"
+          - ""
+          - "Note: If Go is not in your PATH, you may need to add it:"
+          - "export PATH=$PATH:/usr/lib/go-{{ go_version }}/bin"
