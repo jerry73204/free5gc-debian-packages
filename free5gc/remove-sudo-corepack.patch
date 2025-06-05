@@ -1,0 +1,12 @@
+diff --git a/Makefile b/Makefile
+index 860331d..3c845a8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -69,7 +69,6 @@ $(WEBCONSOLE)/$(GO_BIN_PATH)/$(WEBCONSOLE): $(WEBCONSOLE)/server.go $(WEBCONSOLE
+ $(WEBCONSOLE_FRONTEND): $(WEBCONSOLE_JS_FILES)
+ 	@echo "Start building $(@F) frontend...."
+ 	cd $(WEBCONSOLE)/frontend && \
+-	sudo corepack enable && \
+ 	yarn install && \
+ 	yarn build && \
+ 	rm -rf ../public && \

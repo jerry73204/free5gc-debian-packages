@@ -33,7 +33,6 @@ makedepends=(
     'libyaml-dev'
     'nodejs'
     'npm'
-    'yarn'
 )
 source=(
     "git+https://github.com/free5gc/free5gc.git#tag=v${pkgver}"
@@ -44,8 +43,12 @@ source=(
     "gtp5g.service"
     "free5gc-webconsole.service"
     "dkms.conf.in"
+    "remove-sudo-corepack.patch"
+    "https://repo.yarnpkg.com/4.1.0/packages/yarnpkg-cli/bin/yarn.js"
 )
 sha256sums=(
+    'SKIP'
+    'SKIP'
     'SKIP'
     'SKIP'
     'SKIP'
@@ -60,6 +63,22 @@ prepare() {
     cd "${srcdir}/free5gc"
     git submodule init
     git submodule update --recursive
+
+    # Apply patch only if not already applied
+    if ! patch -Np1 --dry-run --reverse < "${srcdir}/remove-sudo-corepack.patch" >/dev/null 2>&1; then
+        patch -Np1 < "${srcdir}/remove-sudo-corepack.patch"
+    fi
+
+    # Set up Yarn 4.x from source
+    cd "${srcdir}/free5gc/webconsole/frontend"
+    mkdir -p .yarn/releases
+
+    # Copy the downloaded yarn and rename it to just "yarn"
+    cp "${srcdir}/yarn.js" .yarn/releases/yarn
+    chmod +x .yarn/releases/yarn
+
+    # Update .yarnrc.yml to use the local yarn
+    echo 'yarnPath: .yarn/releases/yarn' > .yarnrc.yml
 }
 
 build() {
@@ -73,7 +92,9 @@ build() {
     make
 
     # Build WebConsole
-    make webconsole
+    # Add the local yarn to PATH so the Makefile can find it
+    env PATH="${srcdir}/free5gc/webconsole/frontend/.yarn/releases:$PATH" \
+	make webconsole
 
     # Build gtp5g-tunnel utility
     cd "${srcdir}/go-gtp5gnl"
