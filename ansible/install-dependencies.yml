@@ -151,33 +151,6 @@
         state: present
       become: yes
 
-    # Step 8: Install makedeb
-    - name: Check if makedeb is installed
-      ansible.builtin.command: which makedeb
-      register: makedeb_check
-      failed_when: false
-      changed_when: false
-
-    - name: Download makedeb
-      ansible.builtin.get_url:
-        url: https://github.com/makedeb/makedeb/releases/latest/download/makedeb.deb
-        dest: /tmp/makedeb.deb
-        mode: '0644'
-      when: makedeb_check.rc != 0
-
-    - name: Install makedeb
-      ansible.builtin.apt:
-        deb: /tmp/makedeb.deb
-        state: present
-      when: makedeb_check.rc != 0
-      become: yes
-
-    - name: Remove makedeb download
-      ansible.builtin.file:
-        path: /tmp/makedeb.deb
-        state: absent
-      when: makedeb_check.rc != 0
-
     # Step 9: Verify installations
     - name: Check MongoDB version
       ansible.builtin.command: mongod --version
