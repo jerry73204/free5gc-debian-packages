@@ -119,8 +119,14 @@ package_free5gc() {
         install -Dm755 "bin/${nf}" "${pkgdir}/usr/bin/free5gc-${nf}"
     done
 
-    # Install configuration
-    cp -r config/* "${pkgdir}/etc/free5gc/"
+    # Install configuration (excluding webconsole and upf configs)
+    cd config
+    for file in *; do
+        if [[ "$file" != "webuicfg.yaml" && "$file" != "upfcfg.yaml" ]]; then
+            cp -r "$file" "${pkgdir}/etc/free5gc/"
+        fi
+    done
+    cd ..
 
     # Install systemd service files for each NF
     for nf in amf ausf nrf nssf pcf smf udm udr n3iwf chf tngf nef; do
@@ -153,7 +159,7 @@ package_free5gc-upf() {
     install -Dm755 "${srcdir}/go-gtp5gnl/bin/gtp5g-tunnel" "${pkgdir}/usr/bin/gtp5g-tunnel"
 
     # Install UPF config
-    install -Dm644 "config/upfcfg.yaml" "${pkgdir}/etc/free5gc/config/upfcfg.yaml"
+    install -Dm644 "config/upfcfg.yaml" "${pkgdir}/etc/free5gc/upfcfg.yaml"
 
     # Install systemd service files for UPF and gtp5g
     install -Dm644 "${srcdir}/free5gc-upf.service" "${pkgdir}/usr/lib/systemd/system/free5gc-upf.service"
