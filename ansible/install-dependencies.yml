@@ -102,21 +102,6 @@
         update_cache: no
       become: yes
 
-    # Step 5: Add Yarn repository
-    - name: Add Yarn GPG key
-      ansible.builtin.apt_key:
-        url: https://dl.yarnpkg.com/debian/pubkey.gpg
-        state: present
-      become: yes
-
-    - name: Add Yarn repository
-      ansible.builtin.apt_repository:
-        repo: "deb https://dl.yarnpkg.com/debian stable main"
-        state: present
-        filename: yarn
-        update_cache: no
-      become: yes
-
     # Step 6: Update apt cache after adding repositories
     - name: Update apt cache
       ansible.builtin.apt:
@@ -163,12 +148,6 @@
     - name: Install Node.js
       ansible.builtin.apt:
         name: nodejs
-        state: present
-      become: yes
-
-    - name: Install Yarn
-      ansible.builtin.apt:
-        name: yarn
         state: present
       become: yes
 
@@ -226,19 +205,12 @@
       changed_when: false
       failed_when: false
 
-    - name: Check Yarn version
-      ansible.builtin.command: yarn --version
-      register: yarn_version_output
-      changed_when: false
-      failed_when: false
-
     - name: Display installed versions
       ansible.builtin.debug:
         msg:
           - "MongoDB: {{ mongodb_version_output.stdout_lines[0] | default('Not installed') }}"
           - "Go: {{ go_version_output.stdout | default('Not installed') }}"
           - "Node.js: {{ node_version_output.stdout | default('Not installed') }}"
-          - "Yarn: {{ yarn_version_output.stdout | default('Not installed') }}"
 
     - name: Display completion message
       ansible.builtin.debug:
